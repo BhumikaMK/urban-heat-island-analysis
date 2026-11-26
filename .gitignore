@@ -221,3 +221,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# IDE settings
+.vscode/
+
+# Processed data (generated files)
+data/processed/*
+
+# Keep the processed data folder in Git
+!data/processed/.gitkeep
