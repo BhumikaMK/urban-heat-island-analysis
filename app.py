@@ -1,5 +1,12 @@
+from components.dataset_info import render_dataset_info
 from components.data_upload import render_data_upload
+from components.dataset_summary import render_dataset_summary
 from components.header import render_header
+from utils.validation import validate_csv
+from components.about_page import render_about_page
+from components.recommendations_page import render_recommendations_page
+from components.heat_map_page import render_heat_map_page
+from components.visualization_page import render_visualization_page
 from components.metric_cards import render_metric_cards
 import streamlit as st
 
@@ -17,6 +24,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --------------------------------
+# SESSION STATE INITIALIZATION
+# --------------------------------
+
+if "validated_df" not in st.session_state:
+    st.session_state["validated_df"] = None
 
 # --------------------------------
 # CUSTOM CSS
@@ -105,8 +118,43 @@ if selected_page == "Overview":
     st.divider()
 
     # CSV Data Upload
+
     uploaded_file = render_data_upload()
 
+    if uploaded_file is not None:
+
+        df, errors = validate_csv(uploaded_file)
+
+        if errors:
+
+            st.session_state["validated_df"] = None
+
+            st.error("Dataset validation failed.")
+
+            for error in errors:
+                st.warning(error)
+
+        else:
+
+            st.success("Dataset validation successful!")
+
+            st.session_state["validated_df"] = df
+
+            render_dataset_info(uploaded_file)
+
+            render_dataset_summary(df)
+
+
+    # Session State verification
+
+    if st.session_state.get("validated_df") is not None:
+
+        st.success("Dataset is available in session memory.")
+
+        st.write(
+            "Stored records:",
+            len(st.session_state["validated_df"])
+        )
 
 # --------------------------------
 # VISUALIZATIONS PAGE
@@ -114,16 +162,9 @@ if selected_page == "Overview":
 
 elif selected_page == "Visualizations":
 
-    st.title("📊 Temperature Visualizations")
+    df = st.session_state.get("validated_df")
 
-    st.write(
-        "Explore temperature comparisons and trends."
-    )
-
-    st.info(
-        "Interactive charts will be integrated here."
-    )
-
+    render_visualization_page(df)
 
 # --------------------------------
 # HEAT MAP PAGE
@@ -131,17 +172,9 @@ elif selected_page == "Visualizations":
 
 elif selected_page == "Bengaluru Heat Map":
 
-    st.title("🗺️ Bengaluru Heat Map")
+    df = st.session_state.get("validated_df")
 
-    st.write(
-        "Explore geographical temperature distribution "
-        "across Bengaluru."
-    )
-
-    st.info(
-        "Geographical visualizations will be integrated here."
-    )
-
+    render_heat_map_page(df)
 
 # --------------------------------
 # RECOMMENDATIONS PAGE
@@ -149,18 +182,9 @@ elif selected_page == "Bengaluru Heat Map":
 
 elif selected_page == "Recommendations":
 
-    st.title("🌳 Environmental Recommendations")
+    df = st.session_state.get("validated_df")
 
-    st.write(
-        "Explore possible interventions for reducing "
-        "urban heat."
-    )
-
-    st.info(
-        "Recommendations will be generated using "
-        "the backend analysis."
-    )
-
+    render_recommendations_page(df)
 
 # --------------------------------
 # ABOUT PAGE
@@ -168,15 +192,4 @@ elif selected_page == "Recommendations":
 
 elif selected_page == "About":
 
-    st.title("About the Project")
-
-    st.write(
-        """
-        Urban Heat Island Analysis is an environmental
-        monitoring project focused on Bengaluru.
-
-        The application aims to analyse temperature
-        variations between built-up and green areas
-        and support sustainable urban development.
-        """
-    )
+    render_about_page()
